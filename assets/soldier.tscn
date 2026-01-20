@@ -1,0 +1,78 @@
+[gd_scene load_steps=15 format=3 uid="uid://fhjkhl8k2k8s"]
+
+[ext_resource type="Script" uid="uid://cl6lcflp66g5l" path="res://scenes/entities/character/character.gd" id="1_mql08"]
+[ext_resource type="PackedScene" uid="uid://bhpvuiq2ifc84" path="res://art/models/character-soldier.glb" id="2_qancp"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_0qdhu"]
+radius = 0.2
+height = 0.8
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_cspbu"]
+animation = &"fall"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_qt72k"]
+animation = &"idle"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_um280"]
+animation = &"walk"
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_sduu1"]
+advance_mode = 2
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_hk5ml"]
+advance_mode = 2
+advance_expression = "velocity.length() > 0"
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_hf7xx"]
+advance_mode = 2
+advance_expression = "not is_on_floor()"
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_5e5rp"]
+advance_mode = 2
+advance_expression = "is_on_floor() and velocity.length() == 0"
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_lwn6f"]
+advance_mode = 2
+advance_expression = "is_on_floor() and velocity.length() > 0"
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_uhr60"]
+advance_mode = 2
+advance_expression = "not is_on_floor()"
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_o1iqm"]
+advance_mode = 2
+advance_expression = "velocity.length() == 0"
+
+[sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_33lr6"]
+states/Start/position = Vector2(193, 93.5)
+states/fall/node = SubResource("AnimationNodeAnimation_cspbu")
+states/fall/position = Vector2(536.5, -4.99815)
+states/idle/node = SubResource("AnimationNodeAnimation_qt72k")
+states/idle/position = Vector2(382.5, 93.25)
+states/walk/node = SubResource("AnimationNodeAnimation_um280")
+states/walk/position = Vector2(551.5, 159)
+transitions = ["Start", "idle", SubResource("AnimationNodeStateMachineTransition_sduu1"), "idle", "walk", SubResource("AnimationNodeStateMachineTransition_hk5ml"), "idle", "fall", SubResource("AnimationNodeStateMachineTransition_hf7xx"), "fall", "idle", SubResource("AnimationNodeStateMachineTransition_5e5rp"), "fall", "walk", SubResource("AnimationNodeStateMachineTransition_lwn6f"), "walk", "fall", SubResource("AnimationNodeStateMachineTransition_uhr60"), "walk", "idle", SubResource("AnimationNodeStateMachineTransition_o1iqm")]
+graph_offset = Vector2(-108, -143.9982)
+
+[node name="Soldier" type="CharacterBody3D"]
+script = ExtResource("1_mql08")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.375, 0)
+shape = SubResource("CapsuleShape3D_0qdhu")
+
+[node name="character-soldier2" parent="." instance=ExtResource("2_qancp")]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 0, 0)
+
+[node name="Skeleton3D" parent="character-soldier2/character-soldier" index="0"]
+bones/4/rotation = Quaternion(0, 0, -0.38268346, 0.9238795)
+bones/5/rotation = Quaternion(0, 0, 0.38268346, 0.9238795)
+
+[node name="AnimationTree" type="AnimationTree" parent="."]
+active = false
+root_node = NodePath("../character-soldier2")
+tree_root = SubResource("AnimationNodeStateMachine_33lr6")
+advance_expression_base_node = NodePath("..")
+anim_player = NodePath("../character-soldier2/AnimationPlayer")
+
+[editable path="character-soldier2"]

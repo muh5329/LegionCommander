@@ -1,0 +1,77 @@
+[gd_scene load_steps=6 format=3 uid="uid://2my0gtrbp4x0"]
+
+[ext_resource type="Script" uid="uid://d0uj4baq4phjo" path="res://scenes/levels/main_scene.gd" id="1_3ulyp"]
+[ext_resource type="Texture2D" uid="uid://c5x624213gnav" path="res://icon.svg" id="1_ybdc1"]
+[ext_resource type="Texture2D" uid="uid://c7t4yb3bw0d83" path="res://scenes/ui/cursor/rotate_cw.png" id="2_3ulyp"]
+[ext_resource type="Texture2D" uid="uid://cfnwcyaddfcx1" path="res://scenes/ui/hud/menuList.png" id="4_43vid"]
+[ext_resource type="PackedScene" uid="uid://d32nutflp254y" path="res://scenes/ui/loading/loading.tscn" id="4_q46b8"]
+
+[node name="MainScene" type="Control"]
+custom_minimum_size = Vector2(800, 600)
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_3ulyp")
+
+[node name="HUD" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HSplitContainer" type="HSplitContainer" parent="HUD"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -58.0
+offset_bottom = 58.0
+grow_horizontal = 0
+
+[node name="MenuButton" type="Button" parent="HUD/HSplitContainer"]
+layout_mode = 2
+icon = ExtResource("4_43vid")
+
+[node name="Menu" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -114.0
+offset_top = -94.0
+offset_right = 114.0
+offset_bottom = 94.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VSplitContainer" type="VSplitContainer" parent="Menu"]
+layout_mode = 2
+
+[node name="StartButton" type="Button" parent="Menu/VSplitContainer"]
+layout_mode = 2
+text = "Start Game
+"
+icon = ExtResource("1_ybdc1")
+
+[node name="ExitButton" type="Button" parent="Menu/VSplitContainer"]
+layout_mode = 2
+text = "Exit
+"
+icon = ExtResource("2_3ulyp")
+
+[node name="Main3d" type="Node3D" parent="."]
+
+[node name="Loading" parent="." instance=ExtResource("4_q46b8")]
+visible = false
+
+[connection signal="pressed" from="HUD/HSplitContainer/MenuButton" to="." method="_on_menu_button_pressed"]
+[connection signal="pressed" from="Menu/VSplitContainer/StartButton" to="." method="_on_start_button_pressed"]
+[connection signal="pressed" from="Menu/VSplitContainer/ExitButton" to="." method="_on_exit_button_pressed"]

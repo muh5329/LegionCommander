@@ -1,0 +1,46 @@
+[gd_scene load_steps=2 format=3 uid="uid://d32nutflp254y"]
+
+[sub_resource type="FontFile" id="FontFile_dy1bi"]
+cache/0/16/0/ascent = 0.0
+cache/0/16/0/descent = 0.0
+cache/0/16/0/underline_position = 0.0
+cache/0/16/0/underline_thickness = 0.0
+cache/0/16/0/scale = 1.0
+cache/0/60/0/ascent = 0.0
+cache/0/60/0/descent = 0.0
+cache/0/60/0/underline_position = 0.0
+cache/0/60/0/underline_thickness = 0.0
+cache/0/60/0/scale = 1.0
+cache/0/40/0/ascent = 0.0
+cache/0/40/0/descent = 0.0
+cache/0/40/0/underline_position = 0.0
+cache/0/40/0/underline_thickness = 0.0
+cache/0/40/0/scale = 1.0
+
+[node name="Loading" type="CanvasLayer"]
+
+[node name="Control" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -40.0
+offset_right = 40.0
+grow_vertical = 0
+
+[node name="ProgressBar" type="ProgressBar" parent="Control"]
+layout_mode = 0
+offset_left = 2.0
+offset_right = 334.0
+offset_bottom = 33.0
+
+[node name="Countdown" type="Label" parent="Control"]
+layout_mode = 0
+offset_left = 56.0
+offset_top = -40.0
+offset_right = 233.0
+offset_bottom = 7.0
+theme_override_fonts/font = SubResource("FontFile_dy1bi")
+theme_override_font_sizes/font_size = 40
+text = "Loading..."
+metadata/_edit_use_anchors_ = true

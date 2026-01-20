@@ -1,0 +1,22 @@
+[gd_scene load_steps=4 format=3 uid="uid://dkvxjh8ngyxvg"]
+
+[ext_resource type="Script" uid="uid://ca21ylptm2nrd" path="res://scenes/entities/camera/AerialCamera.gd" id="1_7v6jf"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fwn5j"]
+albedo_color = Color(0.15294118, 1, 1, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ks0p1"]
+material = SubResource("StandardMaterial3D_fwn5j")
+
+[node name="Level2" type="Node3D"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_ks0p1")
+
+[node name="CameraAnchor" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25567788, 0)
+script = ExtResource("1_7v6jf")
+
+[node name="Camera3D" type="Camera3D" parent="CameraAnchor"]
+transform = Transform3D(1, 0, 0, 0, 0.6873918, 0.72628677, 0, -0.72628677, 0.6873918, 0.5341239, 5.5129185, 3.455303)
+fov = 30.0
