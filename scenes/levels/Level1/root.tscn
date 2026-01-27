@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3 uid="uid://b1unu3jn5h8xh"]
+[gd_scene load_steps=18 format=3 uid="uid://b1unu3jn5h8xh"]
 
 [ext_resource type="Script" uid="uid://dqutg8x1s78ut" path="res://GameManager.gd" id="1_0iv5t"]
 [ext_resource type="PackedScene" uid="uid://dvghjlxk7s4fh" path="res://assets/target-point.tscn" id="2_0x0f8"]
@@ -15,7 +15,6 @@
 [ext_resource type="PackedScene" uid="uid://vty8g47xfp66" path="res://assets/block.tscn" id="13_8er4y"]
 [ext_resource type="PackedScene" uid="uid://fhjkhl8k2k8s" path="res://assets/soldier.tscn" id="14_3vqew"]
 [ext_resource type="Script" uid="uid://ca21ylptm2nrd" path="res://scenes/entities/camera/AerialCamera.gd" id="15_xqitf"]
-[ext_resource type="PackedScene" uid="uid://c55frup6vb3pr" path="res://scenes/entities/followers/followers.tscn" id="16_0x0f8"]
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_jbdfk"]
 vertices = PackedVector3Array(-1.6816688, 1.8329768, -5.0006685, -0.93166876, 1.8329768, -5.0006685, -0.68166876, 1.8329768, -5.7506685, -0.68166876, 1.8329768, -6.7506685, -1.6816688, 1.8329768, -6.7506685, 1.8183312, 1.8329768, 0.24933147, 1.8183312, 1.8329768, 1.4993315, 2.3183312, 1.8329768, 0.7493315, 6.5683312, 1.8329768, -1.0006685, 5.8183312, 1.8329768, -0.7506685, 5.8183312, 1.8329768, -0.0006685257, 6.5683312, 1.8329768, 1.4993315, -0.18166876, 1.8329768, -3.2506685, -1.1816688, 1.8329768, -2.5006685, 0.81833124, 1.8329768, -2.5006685, 1.0683312, 1.8329768, -3.7506685, -0.18166876, 1.8329768, -4.0006685, 1.3183312, 1.8329768, -3.0006685, 2.8183312, 1.8329768, -3.2506685, 3.3183312, 1.8329768, -1.0006685, 4.0683312, 1.8329768, -1.5006685, 4.5683312, 1.8329768, -3.0006685, 4.0683312, 2.3329768, -4.7506685, 2.5683312, 2.3329768, -5.0006685, -1.6816688, 2.3329768, -0.5006685, -2.6816688, 2.3329768, -0.5006685, -2.6816688, 2.3329768, 1.4993315, -0.43166876, 2.3329768, 1.4993315, -0.68166876, 2.3329768, -0.0006685257, 4.0683312, 2.3329768, -5.7506685, 5.0683312, 2.3329768, -5.7506685, 5.0683312, 2.3329768, -6.7506685, 1.3183312, 2.3329768, -6.0006685, 0.81833124, 2.3329768, -5.7506685, 0.56833124, 2.5829768, -4.7506685, 0.81833124, 2.0829768, -1.5006685, -1.4316688, 2.3329768, -1.5006685, 0.06833124, 2.3329768, -0.7506685, 0.81833124, 2.0829768, -0.7506685, 5.3183312, 1.8329768, 0.49933147, 4.0683312, 1.8329768, 1.4993315, 4.3183312, 1.8329768, 0.49933147, 3.8183312, 1.8329768, 0.7493315, 3.3183312, 1.8329768, -0.25066853, 1.3183312, 2.3329768, -6.7506685, 6.5683312, 1.8329768, -2.7506685, 5.8183312, 1.8329768, -4.7506685, 6.5683312, 1.8329768, -6.7506685, 6.0683312, 1.8329768, -6.7506685)
@@ -180,7 +179,7 @@ transform = Transform3D(2, 0, 0, 0, 1, 0, 0, 0, 3, 2.5, 0, -4)
 [node name="Block" parent="World" groups=["world_group"] instance=ExtResource("13_8er4y")]
 transform = Transform3D(10, 0, 0, 0, 6, 0, 0, 0, 10, 0, -3.01, 0)
 
-[node name="Player" parent="World" groups=["player"] instance=ExtResource("14_3vqew")]
+[node name="Player" parent="World" instance=ExtResource("14_3vqew")]
 
 [node name="CameraAnchor" type="Node3D" parent="."]
 script = ExtResource("15_xqitf")
@@ -204,6 +203,3 @@ transform = Transform3D(0.861633, 0.100587, 0.497464, -0.5, -7.62767e-08, 0.8660
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_clso1")
-
-[node name="Followers" parent="." instance=ExtResource("16_0x0f8")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.77378005)

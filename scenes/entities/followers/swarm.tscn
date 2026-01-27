@@ -1,0 +1,17 @@
+[gd_scene load_steps=2 format=3 uid="uid://pgr1chc62fyx"]
+
+[ext_resource type="PackedScene" uid="uid://ci4t8mjc2n7og" path="res://scenes/entities/followers/follower.tscn" id="1_7rini"]
+
+[node name="Swarm" type="Node3D"]
+
+[node name="Follower" parent="." instance=ExtResource("1_7rini")]
+transform = Transform3D(0.3379153, 0, 0, 0, 0.3379153, 0, 0, 0, 0.3379153, 0, 0.28156668, 0)
+
+[node name="Follower2" parent="." instance=ExtResource("1_7rini")]
+transform = Transform3D(0.3379153, 0, 0, 0, 0.3379153, 0, 0, 0, 0.3379153, 0, 0.28156668, 0)
+
+[node name="Follower3" parent="." instance=ExtResource("1_7rini")]
+transform = Transform3D(0.3379153, 0, 0, 0, 0.3379153, 0, 0, 0, 0.3379153, 0, 0.28156668, 0)
+
+[node name="Follower4" parent="." instance=ExtResource("1_7rini")]
+transform = Transform3D(0.3379153, 0, 0, 0, 0.3379153, 0, 0, 0, 0.3379153, 0, 0.28156668, 0)

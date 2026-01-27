@@ -54,7 +54,7 @@ states/walk/position = Vector2(551.5, 159)
 transitions = ["Start", "idle", SubResource("AnimationNodeStateMachineTransition_sduu1"), "idle", "walk", SubResource("AnimationNodeStateMachineTransition_hk5ml"), "idle", "fall", SubResource("AnimationNodeStateMachineTransition_hf7xx"), "fall", "idle", SubResource("AnimationNodeStateMachineTransition_5e5rp"), "fall", "walk", SubResource("AnimationNodeStateMachineTransition_lwn6f"), "walk", "fall", SubResource("AnimationNodeStateMachineTransition_uhr60"), "walk", "idle", SubResource("AnimationNodeStateMachineTransition_o1iqm")]
 graph_offset = Vector2(-108, -143.9982)
 
-[node name="Soldier" type="CharacterBody3D"]
+[node name="Soldier" type="CharacterBody3D" groups=["player"]]
 script = ExtResource("1_mql08")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]

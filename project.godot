@@ -15,9 +15,9 @@ run/main_scene="uid://2my0gtrbp4x0"
 config/features=PackedStringArray("4.5", "Forward Plus")
 config/icon="res://icon.svg"
 
-[autoload]
+[editor_plugins]
 
-Global="*res://scripts/Global.gd"
+enabled=PackedStringArray("res://addons/script-ide/plugin.cfg")
 
 [global_group]
 
