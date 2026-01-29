@@ -1,7 +1,7 @@
 class_name Follower
 extends CharacterBody3D
 
-const FOLLOW_DISTANCE = 1.8
+const FOLLOW_DISTANCE = 0.9
 const ARRIVAL_THRESHOLD = 0.2  # Tighter arrival (was 0.3)
 const MAX_SPEED = 4.0  # Faster to keep up (was 3.0)
 const ACCELERATION = 12.0  # Quicker response (was 8.0)
@@ -10,12 +10,17 @@ const SEPARATION_DISTANCE = 0.3  # Less separation (was 0.5)
 var leader: CharacterBody3D = null
 var formation_index: int = 0
 
-@onready var _anim: AnimationTree = $AnimationTree if has_node("AnimationTree") else null
+
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
+@onready var animation_tree: AnimationTree = $AnimationTree
+@onready var move_state_machine = $AnimationTree.get("parameters/MoveStateMachine/playback")
 
 var _gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 func _ready() -> void:
+	
+	animation_tree.active = true
+	
 	# Fix collision shape alignment
 	var collision = get_node_or_null("CollisionShape3D")
 	if collision and collision.shape is CapsuleShape3D:
@@ -29,8 +34,7 @@ func _ready() -> void:
 	velocity = Vector3.ZERO
 	add_to_group("followers")
 	
-	if _anim:
-		_anim.active = true
+
 	
 	# Setup NavigationAgent
 	if nav_agent:
@@ -48,7 +52,7 @@ func _setup_navigation() -> void:
 	# Navigation needs one frame to initialize
 	await get_tree().physics_frame
 	if leader:
-		var target = calculate_formation_position()
+		var target = calculate_circle_formation_position()
 		nav_agent.target_position = target
 
 func _physics_process(delta: float) -> void:
@@ -60,13 +64,13 @@ func _physics_process(delta: float) -> void:
 	
 	if leader and nav_agent:
 		# Update navigation target
-		var target_pos = calculate_formation_position()
+		var target_pos = calculate_circle_formation_position()
 		nav_agent.target_position = target_pos
 		
 		# Check if we're close enough
 		if nav_agent.is_navigation_finished():
-			velocity.x = lerp(velocity.x, 0.0, 10.0 * delta)
-			velocity.z = lerp(velocity.z, 0.0, 10.0 * delta)
+			velocity.x = lerp(velocity.x, 0.0, 50.0 * delta)
+			velocity.z = lerp(velocity.z, 0.0, 50.0 * delta)
 		else:
 			# Get next position from navigation
 			var next_path_position = nav_agent.get_next_path_position()
@@ -87,9 +91,16 @@ func _physics_process(delta: float) -> void:
 				look_at(Vector3(next_path_position.x, global_position.y, next_path_position.z), Vector3.UP)
 	
 	move_and_slide()
+	set_movement_anim()
+	
+func set_movement_anim() -> void:
+	if velocity.length() > 0.0:
+		set_move_state("Run")
+	else:
+		set_move_state("Idle")
 
 
-func calculate_formation_position() -> Vector3:
+func calculate_circle_formation_position() -> Vector3:
 	if !leader:
 		return global_position
 	
@@ -100,7 +111,7 @@ func calculate_formation_position() -> Vector3:
 		return leader.global_position
 	
 	# Tight concentric rings formation (Pikmin/RTS style)
-	var followers_per_ring = 12  # More followers per ring = tighter
+	var followers_per_ring = 20  # More followers per ring = tighter
 	var ring_number = formation_index / followers_per_ring
 	var position_in_ring = formation_index % followers_per_ring
 	
@@ -115,7 +126,7 @@ func calculate_formation_position() -> Vector3:
 	
 	# Position BEHIND the leader
 	var leader_forward = -leader.global_transform.basis.z
-	var behind_distance = 0.5 + (ring_number * 0.2)  # Each ring is slightly further back
+	var behind_distance = FOLLOW_DISTANCE + (ring_number * 0.2)  # Each ring is slightly further back
 	var formation_center = leader.global_position - leader_forward * behind_distance
 	
 	# Create circular offset
@@ -128,6 +139,8 @@ func calculate_formation_position() -> Vector3:
 	var target = formation_center + offset
 	target.y = leader.global_position.y
 	return target
+	
+	
 
 func calculate_separation() -> Vector3:
 	var separation = Vector3.ZERO
@@ -162,4 +175,8 @@ func set_leader(new_leader: CharacterBody3D, index: int) -> void:
 func _update_nav_target() -> void:
 	await get_tree().physics_frame
 	if leader:
-		nav_agent.target_position = calculate_formation_position()
+		nav_agent.target_position = calculate_circle_formation_position()
+
+
+func set_move_state(state_name: String) -> void:
+	move_state_machine.travel(state_name)

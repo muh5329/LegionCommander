@@ -34,10 +34,8 @@ var _rotation : int
 func _ready() -> void:
 	_anim.active = true
 	add_to_group("player")
-	for _i in range(20):
+	for _i in range(10):
 		spawn_follower(global_position)
-	
-		
 	
 	
 	
@@ -61,9 +59,6 @@ func _physics_process(delta: float) -> void:
 				velocity.x = 0
 				velocity.z = 0
 
-	
-		
-		
 		
 	move_and_slide()
 	

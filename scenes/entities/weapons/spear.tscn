@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3 uid="uid://b2e5mlsvbno17"]
+
+[ext_resource type="PackedScene" uid="uid://dcil0c8u4csnh" path="res://assets/Weapons/Spear.fbx" id="1_qns6y"]
+[ext_resource type="Script" uid="uid://cfh4vatvy51ai" path="res://scenes/entities/weapons/spear.gd" id="2_1idnd"]
+
+[node name="Spear" instance=ExtResource("1_qns6y")]
+script = ExtResource("2_1idnd")
+
+[node name="Spear" parent="." index="0"]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0, 0)
+
+[node name="RayCast3D" type="RayCast3D" parent="." index="1"]
+transform = Transform3D(0.08, 0, 0, 0, 0.08, 0, 0, 0, 0.08, 0, 0, 0)
+target_position = Vector3(0, 1, 0)

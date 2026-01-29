@@ -1,0 +1,149 @@
+[gd_scene load_steps=20 format=3 uid="uid://b53hweiehkadj"]
+
+[ext_resource type="Script" uid="uid://dleftehpsco34" path="res://scenes/entities/enemies/enemy.gd" id="1_essrt"]
+[ext_resource type="PackedScene" uid="uid://cgqinmxr7tami" path="res://assets/Goblin/Goblin_Male.fbx" id="1_yfmsl"]
+[ext_resource type="PackedScene" uid="uid://iyx18m2wjyfw" path="res://scenes/entities/weapons/axe.tscn" id="3_c8ylr"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_ir4ge"]
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_gflvi"]
+animation = &"CharacterArmature|SwordSlash"
+
+[sub_resource type="AnimationNodeOneShot" id="AnimationNodeOneShot_20lqd"]
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_essrt"]
+animation = &"CharacterArmature|Idle"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_c8ylr"]
+animation = &"CharacterArmature|Jump"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_pm80n"]
+animation = &"CharacterArmature|Run"
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_gflvi"]
+xfade_time = 0.8
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_20lqd"]
+xfade_time = 0.8
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_j3iiu"]
+xfade_time = 0.8
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_bii57"]
+xfade_time = 0.8
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_uu37f"]
+xfade_time = 0.8
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_wyqsp"]
+xfade_time = 0.8
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_w6k81"]
+xfade_time = 0.8
+
+[sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_fu215"]
+states/Idle/node = SubResource("AnimationNodeAnimation_essrt")
+states/Idle/position = Vector2(441, 99.25)
+states/Jump/node = SubResource("AnimationNodeAnimation_c8ylr")
+states/Jump/position = Vector2(558, 201)
+states/Run/node = SubResource("AnimationNodeAnimation_pm80n")
+states/Run/position = Vector2(654.5, 93)
+transitions = ["Start", "Idle", SubResource("AnimationNodeStateMachineTransition_gflvi"), "Idle", "Run", SubResource("AnimationNodeStateMachineTransition_20lqd"), "Run", "Idle", SubResource("AnimationNodeStateMachineTransition_j3iiu"), "Jump", "Idle", SubResource("AnimationNodeStateMachineTransition_bii57"), "Idle", "Jump", SubResource("AnimationNodeStateMachineTransition_uu37f"), "Jump", "Run", SubResource("AnimationNodeStateMachineTransition_wyqsp"), "Run", "Jump", SubResource("AnimationNodeStateMachineTransition_w6k81")]
+graph_offset = Vector2(22, -52)
+
+[sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_j3iiu"]
+
+[sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_27tcs"]
+graph_offset = Vector2(-347.05365, -13.810974)
+nodes/output/position = Vector2(790, 40)
+nodes/MoveStateMachine/node = SubResource("AnimationNodeStateMachine_fu215")
+nodes/MoveStateMachine/position = Vector2(-200, 60)
+nodes/AttackAnimation/node = SubResource("AnimationNodeAnimation_gflvi")
+nodes/AttackAnimation/position = Vector2(-230, 270)
+nodes/AttackOneShot/node = SubResource("AnimationNodeOneShot_20lqd")
+nodes/AttackOneShot/position = Vector2(340, 40)
+nodes/TimeScale/node = SubResource("AnimationNodeTimeScale_j3iiu")
+nodes/TimeScale/position = Vector2(560, 40)
+node_connections = [&"output", 0, &"TimeScale", &"AttackOneShot", 0, &"MoveStateMachine", &"AttackOneShot", 1, &"AttackAnimation", &"TimeScale", 0, &"AttackOneShot"]
+
+[node name="Enemy" type="CharacterBody3D"]
+script = ExtResource("1_essrt")
+
+[node name="Timers" type="Node" parent="."]
+
+[node name="InvulTimer" type="Timer" parent="Timers"]
+wait_time = 0.8
+one_shot = true
+
+[node name="AttackTimer" type="Timer" parent="Timers"]
+wait_time = 5.0
+autostart = true
+
+[node name="Goblin_Male" parent="." instance=ExtResource("1_yfmsl")]
+transform = Transform3D(0.62, 0, 0, 0, 0.62, 0, 0, 0, 0.62, 0, 0, 0)
+
+[node name="Skeleton3D" parent="Goblin_Male/CharacterArmature" index="0"]
+bones/1/position = Vector3(0.0026542475, 0.00024662874, -0.00045055404)
+bones/1/rotation = Quaternion(5.197532e-06, 0.7029519, 0.71123743, 5.33237e-06)
+bones/3/position = Vector3(2.15305e-05, 0.010166886, 0.00019310653)
+bones/3/rotation = Quaternion(-4.5474704e-15, 1.1920935e-07, 1.6263021e-21, 1)
+bones/4/position = Vector3(-1.479934e-05, -0.0006677475, -0.00046242264)
+bones/4/rotation = Quaternion(-0.050768822, -2.6733022e-07, -2.2751662e-08, 0.99871045)
+bones/5/rotation = Quaternion(0.09089295, 4.3622316e-07, 5.6194914e-08, 0.9958607)
+bones/6/rotation = Quaternion(-0.006839968, -8.3231305e-07, -1.5294126e-09, 0.9999766)
+bones/7/rotation = Quaternion(-0.03338167, 6.776383e-07, -2.3220779e-09, 0.9994427)
+bones/8/rotation = Quaternion(-5.587942e-09, -0.0002754753, 1.5575317e-11, 0.99999994)
+bones/10/position = Vector3(0.0012610285, 0.0014133917, 0.00013457636)
+bones/11/rotation = Quaternion(-0.27248794, -0.67592615, -0.22848707, 0.6454981)
+bones/12/rotation = Quaternion(-0.013498161, 0.032329667, -0.035893217, 0.9987413)
+bones/13/rotation = Quaternion(0.0125378985, 0.018195191, -0.006543076, 0.9997344)
+bones/15/position = Vector3(-0.0012482607, 0.0014133902, 0.00013457799)
+bones/16/rotation = Quaternion(-0.27248797, 0.6759262, 0.22848713, 0.64549804)
+bones/17/rotation = Quaternion(-0.013498089, -0.032329667, 0.03589322, 0.9987413)
+bones/18/rotation = Quaternion(0.012537903, -0.018195193, 0.006543078, 0.9997344)
+bones/20/position = Vector3(0.0025302905, -0.00016701959, -0.00055923744)
+bones/20/rotation = Quaternion(0.99863493, 0.009796423, -0.000811436, 0.051299054)
+bones/20/scale = Vector3(0.9999994, 1.0000001, 0.9999827)
+bones/21/rotation = Quaternion(0.10333177, 0.0013233639, 0.009740566, 0.9945984)
+bones/21/scale = Vector3(1.0000001, 0.99999976, 0.99999994)
+bones/23/position = Vector3(-0.0025471216, -0.00016701959, -0.00055924105)
+bones/23/rotation = Quaternion(0.99863493, -0.009796451, 0.0008121375, 0.051299047)
+bones/23/scale = Vector3(0.9999993, 1.0000001, 0.9999829)
+bones/24/rotation = Quaternion(0.103331745, -0.0013233217, -0.009740564, 0.9945984)
+bones/24/scale = Vector3(1.0000001, 0.9999998, 0.99999994)
+bones/26/position = Vector3(0.0026199413, 0.007245327, 0.009631471)
+bones/26/rotation = Quaternion(-4.5474704e-15, 1.1920935e-07, -1.26217745e-27, 1)
+bones/28/position = Vector3(-0.0026280177, 0.00024662874, -0.00045055657)
+bones/28/rotation = Quaternion(-5.6491463e-06, 0.7029519, 0.71123743, -4.9971773e-06)
+bones/30/position = Vector3(-0.002593721, 0.007245327, 0.009631468)
+bones/30/rotation = Quaternion(-4.5474908e-15, -5.9604645e-07, 5.963121e-21, 1)
+
+[node name="RightHandSlot" type="BoneAttachment3D" parent="Goblin_Male/CharacterArmature/Skeleton3D" index="1"]
+transform = Transform3D(-0.043212842, -0.99906445, 0.0016297139, 0.9983543, -0.04324362, -0.037652593, 0.037687846, -1.0058284e-07, 0.9992892, -0.012723498, 0.00022112433, 0.018597163)
+bone_name = "Fist.R"
+bone_idx = 18
+
+[node name="Axe" parent="Goblin_Male/CharacterArmature/Skeleton3D/RightHandSlot" instance=ExtResource("3_c8ylr")]
+transform = Transform3D(0.005, 8.731149e-11, 0, 2.910383e-11, 0.005, 0, -5.820766e-11, 0, 0.005, 0.00024383992, 0.0056374697, -9.195879e-06)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CapsuleShape3D_ir4ge")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+
+[node name="AnimationTree" type="AnimationTree" parent="."]
+root_node = NodePath("../Goblin_Male")
+tree_root = SubResource("AnimationNodeBlendTree_27tcs")
+anim_player = NodePath("../Goblin_Male/AnimationPlayer")
+parameters/AttackOneShot/active = false
+parameters/AttackOneShot/internal_active = false
+parameters/AttackOneShot/request = 0
+parameters/TimeScale/scale = 0.5
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="AnimationTree"]
+
+[connection signal="timeout" from="Timers/AttackTimer" to="." method="_on_attack_timer_timeout"]
+
+[editable path="Goblin_Male"]
+[editable path="Goblin_Male/CharacterArmature/Skeleton3D/RightHandSlot/Axe"]

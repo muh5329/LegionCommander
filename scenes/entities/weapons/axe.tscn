@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3 uid="uid://iyx18m2wjyfw"]
+
+[ext_resource type="PackedScene" uid="uid://b1j8qmb4e022b" path="res://assets/Weapons/Axe.fbx" id="1_4hln3"]
+[ext_resource type="Script" uid="uid://bodp50c2j6j15" path="res://scenes/entities/weapons/axe.gd" id="2_0ib5l"]
+
+[node name="Axe" instance=ExtResource("1_4hln3")]
+transform = Transform3D(0.01, 0, 0, 0, 0.01, 0, 0, 0, 0.01, 0, 0, 0)
+script = ExtResource("2_0ib5l")
+
+[node name="RayCast3D" type="RayCast3D" parent="." index="1"]
+transform = Transform3D(3.3, 0, 0, 0, -3.3, 2.8849516e-07, 0, -2.8849516e-07, -3.3, 0, 0, 0)

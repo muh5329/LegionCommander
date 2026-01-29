@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3 uid="uid://b1unu3jn5h8xh"]
+[gd_scene load_steps=19 format=3 uid="uid://b1unu3jn5h8xh"]
 
 [ext_resource type="Script" uid="uid://dqutg8x1s78ut" path="res://GameManager.gd" id="1_0iv5t"]
 [ext_resource type="PackedScene" uid="uid://dvghjlxk7s4fh" path="res://assets/target-point.tscn" id="2_0x0f8"]
@@ -14,6 +14,7 @@
 [ext_resource type="PackedScene" uid="uid://bcsmicmuagu0x" path="res://assets/wall-gate.tscn" id="12_ablrl"]
 [ext_resource type="PackedScene" uid="uid://vty8g47xfp66" path="res://assets/block.tscn" id="13_8er4y"]
 [ext_resource type="PackedScene" uid="uid://fhjkhl8k2k8s" path="res://assets/soldier.tscn" id="14_3vqew"]
+[ext_resource type="PackedScene" uid="uid://b53hweiehkadj" path="res://scenes/entities/enemies/enemy.tscn" id="15_0x0f8"]
 [ext_resource type="Script" uid="uid://ca21ylptm2nrd" path="res://scenes/entities/camera/AerialCamera.gd" id="15_xqitf"]
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_jbdfk"]
@@ -180,6 +181,9 @@ transform = Transform3D(2, 0, 0, 0, 1, 0, 0, 0, 3, 2.5, 0, -4)
 transform = Transform3D(10, 0, 0, 0, 6, 0, 0, 0, 10, 0, -3.01, 0)
 
 [node name="Player" parent="World" instance=ExtResource("14_3vqew")]
+
+[node name="Enemy" parent="World" instance=ExtResource("15_0x0f8")]
+transform = Transform3D(0.42, 0, 0, 0, 0.41840178, 0.036605407, 0, -0.036605407, 0.41840178, 0, 0, 4.2431684)
 
 [node name="CameraAnchor" type="Node3D" parent="."]
 script = ExtResource("15_xqitf")
