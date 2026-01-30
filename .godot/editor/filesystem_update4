@@ -1,0 +1,15 @@
+res://scenes/levels/Level1/root.tscn
+res://art/shaders/target_point.gdshader
+res://scenes/entities/character/character.gd
+res://scenes/entities/followers/follower.gd
+res://scenes/entities/weapons/spear.tscn
+res://scenes/entities/followers/melee_warrior/knight_male.tscn
+res://scenes/entities/followers/follower.tscn
+res://scenes/entities/followers/melee_warrior/knight_male.gd
+res://scenes/entities/weapons/spear.gd
+res://scenes/entities/enemies/enemy.tscn
+res://scenes/entities/enemies/enemy.gd
+res://scenes/entities/weapons/axe.tscn
+res://scenes/entities/weapons/axe.gd
+res://scenes/ui/units/hp_bar.gd
+res://scenes/ui/units/hp_bar.tscn

@@ -9,11 +9,17 @@ const SEPARATION_DISTANCE = 0.3  # Less separation (was 0.5)
 
 var leader: CharacterBody3D = null
 var formation_index: int = 0
-
-
+var health = 100: 
+	set(value):
+		health = value
+		health_bar_3d.value = health
+		if health <= 0:
+			queue_free()
+			
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 @onready var animation_tree: AnimationTree = $AnimationTree
 @onready var move_state_machine = $AnimationTree.get("parameters/MoveStateMachine/playback")
+@onready var health_bar_3d: ProgressBar = $Sprite3D/SubViewport/HealthBar3D
 
 var _gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 
@@ -26,10 +32,13 @@ func _ready() -> void:
 	if collision and collision.shape is CapsuleShape3D:
 		collision.position.y = collision.shape.height / 2.0
 	
-	# Set proper collision layers
-	collision_layer = 2  # Followers
-	collision_mask = 1   # Ground only
-	
+	collision_layer = 0
+	collision_mask = 0
+
+	set_collision_layer_value(3, true)   # Followers live on layer 3
+
+	set_collision_mask_value(1, true)    # Ground
+	set_collision_mask_value(5, true)    # Obstacles
 	# Initialize
 	velocity = Vector3.ZERO
 	add_to_group("followers")
@@ -141,6 +150,8 @@ func calculate_circle_formation_position() -> Vector3:
 	return target
 	
 	
+func set_move_state(state_name: String) -> void:
+	move_state_machine.travel(state_name)
 
 func calculate_separation() -> Vector3:
 	var separation = Vector3.ZERO
@@ -177,6 +188,8 @@ func _update_nav_target() -> void:
 	if leader:
 		nav_agent.target_position = calculate_circle_formation_position()
 
-
-func set_move_state(state_name: String) -> void:
-	move_state_machine.travel(state_name)
+func hit() -> void :
+	print('hit')
+	if not $Timers/InvulTimer.time_left:
+		$Timers/InvulTimer.start()
+		health -= 10

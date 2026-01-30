@@ -1,8 +1,9 @@
-[gd_scene load_steps=20 format=3 uid="uid://b53hweiehkadj"]
+[gd_scene load_steps=23 format=3 uid="uid://b53hweiehkadj"]
 
 [ext_resource type="Script" uid="uid://dleftehpsco34" path="res://scenes/entities/enemies/enemy.gd" id="1_essrt"]
 [ext_resource type="PackedScene" uid="uid://cgqinmxr7tami" path="res://assets/Goblin/Goblin_Male.fbx" id="1_yfmsl"]
 [ext_resource type="PackedScene" uid="uid://iyx18m2wjyfw" path="res://scenes/entities/weapons/axe.tscn" id="3_c8ylr"]
+[ext_resource type="PackedScene" uid="uid://c4mq3uy0ctupx" path="res://scenes/ui/units/hp_bar.tscn" id="4_pm80n"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_ir4ge"]
 
@@ -66,8 +67,19 @@ nodes/TimeScale/node = SubResource("AnimationNodeTimeScale_j3iiu")
 nodes/TimeScale/position = Vector2(560, 40)
 node_connections = [&"output", 0, &"TimeScale", &"AttackOneShot", 0, &"MoveStateMachine", &"AttackOneShot", 1, &"AttackAnimation", &"TimeScale", 0, &"AttackOneShot"]
 
+[sub_resource type="SphereShape3D" id="SphereShape3D_c8ylr"]
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_gflvi"]
+viewport_path = NodePath("SubViewport")
+
 [node name="Enemy" type="CharacterBody3D"]
+collision_layer = 8
+collision_mask = 12
 script = ExtResource("1_essrt")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CapsuleShape3D_ir4ge")
 
 [node name="Timers" type="Node" parent="."]
 
@@ -126,9 +138,8 @@ bone_idx = 18
 [node name="Axe" parent="Goblin_Male/CharacterArmature/Skeleton3D/RightHandSlot" instance=ExtResource("3_c8ylr")]
 transform = Transform3D(0.005, 8.731149e-11, 0, 2.910383e-11, 0.005, 0, -5.820766e-11, 0, 0.005, 0.00024383992, 0.0056374697, -9.195879e-06)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-shape = SubResource("CapsuleShape3D_ir4ge")
+[node name="RayCast3D" parent="Goblin_Male/CharacterArmature/Skeleton3D/RightHandSlot/Axe" index="1"]
+collision_mask = 15
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 
@@ -141,9 +152,21 @@ parameters/AttackOneShot/internal_active = false
 parameters/AttackOneShot/request = 0
 parameters/TimeScale/scale = 0.5
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="AnimationTree"]
+[node name="Area3D" type="Area3D" parent="."]
+collision_layer = 12
+collision_mask = 12
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D"]
+transform = Transform3D(8.42, 0, 0, 0, 8.42, 0, 0, 0, 8.42, 0, 0.003327608, 0)
+shape = SubResource("SphereShape3D_c8ylr")
+
+[node name="Sprite3D" parent="." instance=ExtResource("4_pm80n")]
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, 0, 2.3330984, 0)
+texture = SubResource("ViewportTexture_gflvi")
 
 [connection signal="timeout" from="Timers/AttackTimer" to="." method="_on_attack_timer_timeout"]
+[connection signal="body_entered" from="Area3D" to="." method="_on_area_3d_body_entered"]
+[connection signal="body_exited" from="Area3D" to="." method="_on_area_3d_body_exited"]
 
 [editable path="Goblin_Male"]
 [editable path="Goblin_Male/CharacterArmature/Skeleton3D/RightHandSlot/Axe"]

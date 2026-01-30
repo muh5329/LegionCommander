@@ -179,11 +179,13 @@ transform = Transform3D(2, 0, 0, 0, 1, 0, 0, 0, 3, 2.5, 0, -4)
 
 [node name="Block" parent="World" groups=["world_group"] instance=ExtResource("13_8er4y")]
 transform = Transform3D(10, 0, 0, 0, 6, 0, 0, 0, 10, 0, -3.01, 0)
+collision_layer = 63
+collision_mask = 31
 
 [node name="Player" parent="World" instance=ExtResource("14_3vqew")]
 
 [node name="Enemy" parent="World" instance=ExtResource("15_0x0f8")]
-transform = Transform3D(0.42, 0, 0, 0, 0.41840178, 0.036605407, 0, -0.036605407, 0.41840178, 0, 0, 4.2431684)
+transform = Transform3D(0.39, 0, 0, 0, 0.39, 0, 0, 0, 0.39, 0, 0, 4.664112)
 
 [node name="CameraAnchor" type="Node3D" parent="."]
 script = ExtResource("15_xqitf")

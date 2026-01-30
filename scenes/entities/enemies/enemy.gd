@@ -31,31 +31,36 @@ const simple_attacks = {
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 @onready var animation_tree: AnimationTree = $AnimationTree
 @onready var move_state_machine = $AnimationTree.get("parameters/MoveStateMachine/playback")
-@onready var target = get_tree().get_first_node_in_group('player')
 @onready var attack_animation  = $AnimationTree.get_tree_root().get_node('AttackAnimation')
+@onready var health_bar_3d: ProgressBar = $Sprite3D/SubViewport/HealthBar3D
 
 var _gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
-var health = 5: 
+var health = 100: 
 	set(value):
 		health = value
+		health_bar_3d.value = health
 		if health <= 0:
 			queue_free()
+			
 var speed_modifier := 1.0
 var can_damage_toggle := false
 var rng = RandomNumberGenerator.new()
+var target_position :Vector3 = Vector3.ZERO
 
 func _ready() -> void:
 	
 	animation_tree.active = true
 	
-	# Fix collision shape alignment
-	var collision = get_node_or_null("CollisionShape3D")
-	if collision and collision.shape is CapsuleShape3D:
-		collision.position.y = collision.shape.height / 2.0
-	
-	# Set proper collision layers
-	collision_layer = 2  # Followers
-	collision_mask = 1   # Ground only
+	collision_layer = 0
+	collision_mask = 0
+
+	set_collision_layer_value(3, true)
+	set_collision_layer_value(4, true)
+
+	set_collision_mask_value(1, true)
+	set_collision_mask_value(3, true)
+	set_collision_mask_value(4, true)
+	set_collision_mask_value(5, true)
 	
 	# Initialize
 	velocity = Vector3.ZERO
@@ -81,13 +86,13 @@ func _physics_process(delta: float) -> void:
 
 func move_to_target(delta) -> void:
 
-	if position.distance_to(target.position) < notice_radius:
-		var target_dir = (target.position - position).normalized()
+	if position.distance_to(target_position) < notice_radius:
+		var target_dir = (target_position - position).normalized()
 		var target_vec2 = Vector2(target_dir.x, target_dir.z)
 		var target_angle = -target_vec2.angle() + PI/2
 		rotation.y = rotate_toward(rotation.y,target_angle, delta * 6.0) 
 		
-		if position.distance_to(target.position) > attack_radius:
+		if position.distance_to(target_position) > attack_radius:
 			velocity = Vector3(target_vec2.x,0,target_vec2.y) * speed * speed_modifier
 			move_state_machine.travel('Run')
 		else:
@@ -126,9 +131,13 @@ func set_move_state(state_name: String) -> void:
 func hit() -> void :
 	if not $Timers/InvulTimer.time_left:
 		$Timers/InvulTimer.start()
-		health -= 1
+		health -= 10
+		
 
-
+func update_hp(value: int) -> void:
+	health_bar_3d.value = value
+	health = value
+	
 func attack_logic() -> void:
 	if can_damage_toggle:
 		var collider = $Goblin_Male/CharacterArmature/Skeleton3D/RightHandSlot/Axe/RayCast3D.get_collider()
@@ -142,10 +151,19 @@ func melee_attack_animation() -> void:
 	
 func _on_attack_timer_timeout() -> void:
 	$Timers/AttackTimer.wait_time = rng.randf_range(4.0, 5.5)
-	if position.distance_to(target.position) < 5.0: 
+	if position.distance_to(target_position) < 5.0: 
 		melee_attack_animation()
 	else:
 		if rng.randi() % 2:
 			pass
 		else:
 			pass
+func set_target( position:Vector3) -> void :
+	target_position = position
+	pass
+
+func _on_area_3d_body_entered(body: Node3D) -> void:
+	set_target(body.position) 
+
+func _on_area_3d_body_exited(body: Node3D) -> void:
+	pass # Replace with function body.
