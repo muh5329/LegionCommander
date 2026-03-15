@@ -76,17 +76,14 @@ func _mouse_inputs() -> void:
 	else:
 		#Input.set_custom_mouse_cursor(_default_cursor)
 		_right_clicked_this_frame = false
-		
-		
+
 func _camera_pan( delta: float) -> void:
 	if Input.get_mouse_mode() != Input.MOUSE_MODE_CONFINED:
 		return
 	
 	var mouse_pos:Vector2 = get_viewport().get_mouse_position()
 	var viewport_size:Vector2 = get_viewport().get_visible_rect().size
-	
 		
-	
 func _camera_move(delta:float) -> void:
 	var direction: Vector2 = Vector2.ZERO
 	if Input.is_action_pressed(&"input_action_camera_forward"): direction.x = -1
@@ -94,7 +91,6 @@ func _camera_move(delta:float) -> void:
 	if Input.is_action_pressed(&"input_action_camera_left"): direction.y = -1
 	if Input.is_action_pressed(&"input_action_camera_right"): direction.y = 1
 	if direction == Vector2.ZERO: return # No Movement
-	
 
 func _camera_rotate( delta:float ) -> void:
 	var direction: float = 0.0
@@ -111,7 +107,6 @@ func _camera_zoom(delta:float) -> void:
 	if Input.is_action_pressed(&"input_action_camera_zoom_out") or Input.is_action_just_released(&"input_action_camera_zoom_out"):
 		direction = -1
 	if direction == 0.0: return # No Rotation
-	
 	
 func _snap_to_map(pos: Vector3):
 	return NavigationServer3D.map_get_closest_point(map, pos)

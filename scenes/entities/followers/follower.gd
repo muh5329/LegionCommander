@@ -189,7 +189,6 @@ func _update_nav_target() -> void:
 		nav_agent.target_position = calculate_circle_formation_position()
 
 func hit() -> void :
-	print('hit')
 	if not $Timers/InvulTimer.time_left:
 		$Timers/InvulTimer.start()
 		health -= 10

@@ -1,3 +1,6 @@
+Terrain3D
+GridMap
+MeshInstance3D
 Sprite3D
 SubViewport
 ProgressBar
@@ -10,5 +13,3 @@ BoneAttachment3D
 PhysicalBone3D
 Timer
 Node
-AnimationTree
-MeshInstance3D
