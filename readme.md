@@ -16,7 +16,7 @@ A top-down Godot game inspired by **Pikmin** and **Patapon**. Command your legio
 
 ## Media
 
-![Gameplay Preview](Media/screen_capture.mov)
+<video src="edia/screen_capture.mov" width="80%" controls></video>
 
 ## Getting Started
 
