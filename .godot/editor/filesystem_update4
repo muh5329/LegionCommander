@@ -1,4 +1,11 @@
-res://scenes/levels/Level1/root.tscn
+res://scenes/entities/character/soldier.tscn
 res://art/shaders/target_point.gdshader
-res://GameManager.gd
-res://readme.md
+res://scenes/entities/character/states/PlayerState.gd
+res://scenes/entities/character/states/running.gd
+res://scenes/entities/character/states/idle.gd
+res://scenes/levels/Level1/root.tscn
+res://scenes/entities/character/states/falling.gd
+res://scenes/entities/character/states/jumping.gd
+res://scenes/entities/followers/swarm.tscn
+res://scenes/entities/character/character.gd
+res://scripts/StateMachine.gd

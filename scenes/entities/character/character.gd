@@ -41,8 +41,8 @@ func _ready() -> void:
 	
 func _physics_process(delta: float) -> void:
 	
-	if !is_on_floor():
-		velocity.y -= _gravity * delta
+	#if !is_on_floor():
+		#velocity.y -= _gravity * delta
 
 	if _path != null and !_path.is_empty():
 		var target_pos = _path[0]

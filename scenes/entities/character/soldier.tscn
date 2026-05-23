@@ -1,7 +1,12 @@
-[gd_scene load_steps=15 format=3 uid="uid://fhjkhl8k2k8s"]
+[gd_scene load_steps=20 format=3 uid="uid://fhjkhl8k2k8s"]
 
 [ext_resource type="Script" uid="uid://cl6lcflp66g5l" path="res://scenes/entities/character/character.gd" id="1_mql08"]
 [ext_resource type="PackedScene" uid="uid://bhpvuiq2ifc84" path="res://art/models/character-soldier.glb" id="2_qancp"]
+[ext_resource type="Script" uid="uid://gti1nb3iwb1" path="res://scripts/StateMachine.gd" id="3_3hpfg"]
+[ext_resource type="Script" uid="uid://bkpqn5bs4lqs2" path="res://scenes/entities/character/states/idle.gd" id="4_n0eiv"]
+[ext_resource type="Script" uid="uid://ba21mf6ds510n" path="res://scenes/entities/character/states/running.gd" id="5_flh0j"]
+[ext_resource type="Script" uid="uid://bvejf1sralmrx" path="res://scenes/entities/character/states/falling.gd" id="6_0toc2"]
+[ext_resource type="Script" uid="uid://b3hqnjtbsqwba" path="res://scenes/entities/character/states/jumping.gd" id="6_n0eiv"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_0qdhu"]
 radius = 0.2
@@ -74,5 +79,20 @@ root_node = NodePath("../character-soldier2")
 tree_root = SubResource("AnimationNodeStateMachine_33lr6")
 advance_expression_base_node = NodePath("..")
 anim_player = NodePath("../character-soldier2/AnimationPlayer")
+
+[node name="StateMachine" type="Node" parent="."]
+script = ExtResource("3_3hpfg")
+
+[node name="Idle" type="Node" parent="StateMachine"]
+script = ExtResource("4_n0eiv")
+
+[node name="Running" type="Node" parent="StateMachine"]
+script = ExtResource("5_flh0j")
+
+[node name="Jumping" type="Node" parent="StateMachine"]
+script = ExtResource("6_n0eiv")
+
+[node name="Falling" type="Node" parent="StateMachine"]
+script = ExtResource("6_0toc2")
 
 [editable path="character-soldier2"]

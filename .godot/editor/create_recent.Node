@@ -1,4 +1,4 @@
-Terrain3D
+Node
 GridMap
 MeshInstance3D
 Sprite3D
@@ -12,4 +12,3 @@ RayCast3D
 BoneAttachment3D
 PhysicalBone3D
 Timer
-Node

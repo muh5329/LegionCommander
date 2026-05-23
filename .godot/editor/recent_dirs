@@ -1,10 +1,11 @@
+res://scenes/entities/character/states
+res://scripts
 res://scenes/ui/units
 res://scenes/ui/hud
 res://scenes/entities/weapons
 res://scenes/entities/enemies
 res://scenes/entities/followers/melee_warrior
 res://scenes/entities/followers
-res://scripts
 res://scenes/ui/loading
 res://scenes/levels/Level2
 res://scenes/levels/Level1

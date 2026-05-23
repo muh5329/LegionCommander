@@ -13,7 +13,7 @@
 [ext_resource type="PackedScene" uid="uid://bsecaodoji4m6" path="res://assets/wall.tscn" id="11_x3eap"]
 [ext_resource type="PackedScene" uid="uid://bcsmicmuagu0x" path="res://assets/wall-gate.tscn" id="12_ablrl"]
 [ext_resource type="PackedScene" uid="uid://vty8g47xfp66" path="res://assets/block.tscn" id="13_8er4y"]
-[ext_resource type="PackedScene" uid="uid://fhjkhl8k2k8s" path="res://assets/soldier.tscn" id="14_3vqew"]
+[ext_resource type="PackedScene" uid="uid://fhjkhl8k2k8s" path="res://scenes/entities/character/soldier.tscn" id="14_3vqew"]
 [ext_resource type="PackedScene" uid="uid://b53hweiehkadj" path="res://scenes/entities/enemies/enemy.tscn" id="15_0x0f8"]
 [ext_resource type="Script" uid="uid://ca21ylptm2nrd" path="res://scenes/entities/camera/AerialCamera.gd" id="15_xqitf"]
 
