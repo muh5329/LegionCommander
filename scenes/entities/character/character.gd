@@ -37,31 +37,6 @@ func _ready() -> void:
 	for _i in range(10):
 		spawn_follower(global_position)
 	
-	
-	
-func _physics_process(delta: float) -> void:
-	
-	#if !is_on_floor():
-		#velocity.y -= _gravity * delta
-
-	if _path != null and !_path.is_empty():
-		var target_pos = _path[0]
-		var diff = target_pos - global_position
-		if diff.length() > 0.1:
-			var next : Vector3 = target_pos
-			look_at(Vector3(next.x, global_position.y, next.z), Vector3.UP)
-			var dir : Vector3 = ( next - global_position ).normalized()
-			velocity.x = dir.x * _speed
-			velocity.z = dir.z * _speed
-		else:
-			_path.remove_at(0)
-			if _path.is_empty: 
-				velocity.x = 0
-				velocity.z = 0
-
-		
-	move_and_slide()
-	
 
 	
 # public func
