@@ -1,7 +1,7 @@
 [gd_scene load_steps=6 format=3 uid="uid://b6us4imu831jw"]
 
 [ext_resource type="PackedScene" uid="uid://d8bbt8fx4ebh" path="res://assets/_base.tscn" id="1_6w2tk"]
-[ext_resource type="PackedScene" uid="uid://3s3l8723jv2b" path="res://25-3DNav/art/models/stairs-corner.glb" id="2_56apt"]
+[ext_resource type="PackedScene" uid="uid://3s3l8723jv2b" path="res://art/models/stairs-corner.glb" id="2_56apt"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_d6mdl"]
 size = Vector3(0.333154, 0.5, 0.336719)

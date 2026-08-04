@@ -1,13 +1,8 @@
+## Tiny cross-scene registry. Autoloaded as `Global`.
 extends Node
 
-var main_scene
-var player
+## The currently loaded level's root scene (set by main_scene.gd).
+var main_scene: Node = null
 
-# Called when the node enters the scene tree for the first time.
-func _ready() -> void:
-	pass # Replace with function body.
-
-
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta: float) -> void:
-	pass
+## The active commander. Set by Character._ready(), read by recruit pods and UI.
+var player: Node3D = null

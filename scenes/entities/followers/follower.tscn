@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3 uid="uid://ci4t8mjc2n7og"]
+[gd_scene load_steps=20 format=3 uid="uid://ci4t8mjc2n7og"]
 
 [ext_resource type="Script" uid="uid://c5svctlru6emw" path="res://scenes/entities/followers/follower.gd" id="1_080i3"]
 [ext_resource type="PackedScene" uid="uid://bj4up7g180dv2" path="res://scenes/entities/followers/melee_warrior/knight_male.tscn" id="2_teuww"]
@@ -40,11 +40,22 @@ states/Start/position = Vector2(195, 44.65548)
 transitions = ["Start", "Idle", SubResource("AnimationNodeStateMachineTransition_134sq"), "Idle", "Run", SubResource("AnimationNodeStateMachineTransition_h0eeg"), "Run", "Idle", SubResource("AnimationNodeStateMachineTransition_ap776"), "Run", "Jump", SubResource("AnimationNodeStateMachineTransition_eweor"), "Jump", "Run", SubResource("AnimationNodeStateMachineTransition_kkadd"), "Idle", "Jump", SubResource("AnimationNodeStateMachineTransition_bfe2c"), "Jump", "Idle", SubResource("AnimationNodeStateMachineTransition_bgda4")]
 graph_offset = Vector2(30.83235, -13.365096)
 
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_atk01"]
+animation = &"CharacterArmature|SwordSlash"
+
+[sub_resource type="AnimationNodeOneShot" id="AnimationNodeOneShot_atk01"]
+fadein_time = 0.05
+fadeout_time = 0.12
+
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_1e1uf"]
 graph_offset = Vector2(-529.1919, 25.804237)
 nodes/MoveStateMachine/node = SubResource("AnimationNodeStateMachine_qj8m1")
 nodes/MoveStateMachine/position = Vector2(-80, 70)
-node_connections = [&"output", 0, &"MoveStateMachine"]
+nodes/AttackAnimation/node = SubResource("AnimationNodeAnimation_atk01")
+nodes/AttackAnimation/position = Vector2(-80, 300)
+nodes/AttackOneShot/node = SubResource("AnimationNodeOneShot_atk01")
+nodes/AttackOneShot/position = Vector2(280, 70)
+node_connections = [&"output", 0, &"AttackOneShot", &"AttackOneShot", 0, &"MoveStateMachine", &"AttackOneShot", 1, &"AttackAnimation"]
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_favr2"]
 viewport_path = NodePath("SubViewport")
@@ -107,6 +118,9 @@ root_node = NodePath("../Knight_Male")
 tree_root = SubResource("AnimationNodeBlendTree_1e1uf")
 advance_expression_base_node = NodePath("..")
 anim_player = NodePath("../Knight_Male/AnimationPlayer")
+parameters/AttackOneShot/active = false
+parameters/AttackOneShot/internal_active = false
+parameters/AttackOneShot/request = 0
 
 [node name="Sprite3D" parent="." instance=ExtResource("3_favr2")]
 transform = Transform3D(0.26, 0, 0, 0, 0.26, 0, 0, 0, 0.26, 0, 2.2758825, 0)

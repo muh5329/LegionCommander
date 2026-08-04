@@ -75,8 +75,11 @@ func load_level(level_name: String) -> void:
 
 
 func _on_start_button_pressed() -> void:
+	load_level("Battlefield")
+
+
+func _on_skirmish_button_pressed() -> void:
 	load_level("Level1")
-	pass # Replace with function body.
 
 
 func _on_exit_button_pressed() -> void:

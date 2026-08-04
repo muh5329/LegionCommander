@@ -57,7 +57,13 @@ layout_mode = 2
 
 [node name="StartButton" type="Button" parent="Menu/VSplitContainer"]
 layout_mode = 2
-text = "Start Game
+text = "Campaign - The Great Field
+"
+icon = ExtResource("1_ybdc1")
+
+[node name="SkirmishButton" type="Button" parent="Menu/VSplitContainer"]
+layout_mode = 2
+text = "Skirmish - Old Arena
 "
 icon = ExtResource("1_ybdc1")
 
@@ -74,4 +80,5 @@ visible = false
 
 [connection signal="pressed" from="HUD/HSplitContainer/MenuButton" to="." method="_on_menu_button_pressed"]
 [connection signal="pressed" from="Menu/VSplitContainer/StartButton" to="." method="_on_start_button_pressed"]
+[connection signal="pressed" from="Menu/VSplitContainer/SkirmishButton" to="." method="_on_skirmish_button_pressed"]
 [connection signal="pressed" from="Menu/VSplitContainer/ExitButton" to="." method="_on_exit_button_pressed"]

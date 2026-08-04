@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/entities/camera/BattleCamera.gd" id="1_battlecam"]
+
+[node name="BattleCamera" type="Node3D"]
+script = ExtResource("1_battlecam")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.7431448, 0.66913056, 0, -0.66913056, 0.7431448, 0, 14.72, 16.35)
+current = true
+fov = 55.0
+far = 600.0

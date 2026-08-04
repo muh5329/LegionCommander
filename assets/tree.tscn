@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://be6gkutkhe46f"]
 
 [ext_resource type="PackedScene" uid="uid://d8bbt8fx4ebh" path="res://assets/_base.tscn" id="1_82jo8"]
-[ext_resource type="PackedScene" uid="uid://by32ydml6l3j4" path="res://25-3DNav/art/models/tree.glb" id="2_qbokc"]
+[ext_resource type="PackedScene" uid="uid://by32ydml6l3j4" path="res://art/models/tree.glb" id="2_qbokc"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_d6mdl"]
 size = Vector3(0.6, 1.9, 0.6)

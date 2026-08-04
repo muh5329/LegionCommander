@@ -1,7 +1,11 @@
-res://scenes/entities/character/soldier.tscn
-res://art/shaders/target_point.gdshader
+res://scenes/entities/camera/BattleCamera.gd
 res://scenes/entities/character/character.gd
-res://scenes/entities/character/states/falling.gd
-res://scenes/entities/character/states/idle.gd
-res://scenes/entities/character/states/running.gd
-res://scenes/entities/character/states/player_state.gd
+res://scenes/entities/enemies/enemy.gd
+res://scenes/entities/enemies/enemy_captain.gd
+res://scenes/entities/followers/follower.gd
+res://scenes/ui/hud/legion_hud.gd
+res://scripts/Global.gd
+res://scripts/combat/battle_service.gd
+res://scripts/combat/combatant.gd
+res://scripts/combat/floating_text.gd
+res://scripts/world/world_generator.gd
