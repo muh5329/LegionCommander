@@ -27,13 +27,26 @@ signal generated(info: Dictionary)
 @export var world_seed: int = 20250804
 @export var hill_amplitude: float = 5.5
 @export var hill_frequency: float = 0.012
-@export var detail_amplitude: float = 1.1
-@export var detail_frequency: float = 0.06
+## Kept low on purpose. Soldiers are only ~0.7 m tall; fine-grained noise that
+## looks like pleasant texture from the camera is a landscape of cliffs to them.
+## Peak gradient here is roughly amplitude * 2PI * frequency, and the total
+## across both octaves must stay under max_walkable_slope.
+@export var detail_amplitude: float = 0.55
+@export var detail_frequency: float = 0.035
 ## Terrain lifts into impassable ridges past this fraction of the half-size.
 @export var rim_start: float = 0.78
-@export var rim_height: float = 18.0
+## Steep enough that the rim is beyond floor_max_angle - a wall, not a hill.
+@export var rim_height: float = 26.0
 ## Slopes steeper than this (in degrees) are cut out of the navmesh.
-@export var max_walkable_slope: float = 34.0
+## Combatant.setup_navigation() keeps the physics floor angle just above this,
+## so units can traverse everything the navmesh offers and little more.
+@export var max_walkable_slope: float = 38.0
+
+@export_group("Navmesh merging")
+## Navmesh rectangles are flat. Merging too far across curved ground leaves
+## plates floating metres off the real surface, which wrecks pathing.
+@export var max_merge_cells: int = 6
+@export var max_merge_height_spread: float = 1.0
 
 @export_group("Scatter")
 @export var tree_count: int = 620
@@ -51,6 +64,11 @@ signal generated(info: Dictionary)
 # Region definitions
 # ---------------------------------------------------------------------------
 enum RegionKind { HOME, GROVE, RUINS, PLAIN, HIGHLAND, MARSH }
+
+## 4-way grid neighbours, typed so flood-fill loop variables infer cleanly.
+const NEIGHBOURS_4: Array[Vector2i] = [
+	Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1),
+]
 
 ## Each region: where it sits (polar, fraction of half-size), how big, what
 ## grows there and how much of it. Angles are clockwise from +X.
@@ -321,8 +339,11 @@ func _scatter_props() -> void:
 	blocked.clear()
 	var tree_mesh := _extract_mesh(tree_model)
 	if tree_mesh:
+		# Only the trunk blocks navigation, not the canopy. A generous radius
+		# here closes the gaps between trees and turns a dense wood into a maze
+		# of dead ends that units path into and then stall in.
 		_scatter_multimesh("Forest", tree_mesh, tree_count, "tree_density",
-			Vector2(0.8, 1.9), 0.9)
+			Vector2(0.8, 1.9), 0.4)
 	_scatter_rocks()
 	_scatter_ruins()
 
@@ -353,9 +374,9 @@ func _scatter_multimesh(
 			continue
 
 		var s := _rng.randf_range(scale_range.x, scale_range.y)
-		var basis := Basis(Vector3.UP, _rng.randf() * TAU).scaled(Vector3(s, s, s))
+		var orientation := Basis(Vector3.UP, _rng.randf() * TAU).scaled(Vector3(s, s, s))
 		var pos := Vector3(p.x, height_at(p.x, p.y) - 0.1, p.y)
-		transforms.append(Transform3D(basis, pos))
+		transforms.append(Transform3D(orientation, pos))
 		_block_cells(p.x, p.y, block_radius * s)
 
 	if transforms.is_empty():
@@ -394,10 +415,10 @@ func _scatter_rocks() -> void:
 			continue
 
 		var s := _rng.randf_range(0.6, 2.4)
-		var basis := Basis(Vector3.UP, _rng.randf() * TAU) \
+		var orientation := Basis(Vector3.UP, _rng.randf() * TAU) \
 			.rotated(Vector3.RIGHT, _rng.randf_range(-0.25, 0.25)) \
 			.scaled(Vector3(s, s * _rng.randf_range(0.6, 1.1), s))
-		transforms.append(Transform3D(basis, Vector3(p.x, height_at(p.x, p.y) - 0.25, p.y)))
+		transforms.append(Transform3D(orientation, Vector3(p.x, height_at(p.x, p.y) - 0.25, p.y)))
 		_block_cells(p.x, p.y, 0.8 * s)
 
 	if transforms.is_empty():
@@ -420,7 +441,7 @@ func _scatter_ruins() -> void:
 	add_child(holder)
 
 	var pieces: Array[PackedScene] = []
-	for candidate in [column_model, column_damaged_model, bricks_model, statue_model]:
+	for candidate: PackedScene in [column_model, column_damaged_model, bricks_model, statue_model]:
 		if candidate != null:
 			pieces.append(candidate)
 	if pieces.is_empty():
@@ -533,10 +554,13 @@ func _build_navigation() -> void:
 	var cells := int(map_size / nav_cell)
 	var walkable: Array[bool] = []
 	walkable.resize(cells * cells)
+	var cell_height := PackedFloat32Array()
+	cell_height.resize(cells * cells)
 
 	for cz in range(cells):
 		for cx in range(cells):
 			var c := _cell_centre(cx, cz)
+			cell_height[cz * cells + cx] = height_at(c.x, c.y)
 			var ok := true
 			if blocked.has(Vector2i(cx, cz)):
 				ok = false
@@ -546,7 +570,8 @@ func _build_navigation() -> void:
 				ok = false
 			walkable[cz * cells + cx] = ok
 
-	var rects := _greedy_rects(walkable, cells)
+	_keep_largest_region(walkable, cells)
+	var rects := _greedy_rects(walkable, cells, cell_height)
 
 	var nav_mesh := NavigationMesh.new()
 	nav_mesh.agent_radius = 0.45
@@ -588,9 +613,61 @@ func _build_navigation() -> void:
 	add_child(_nav_region)
 
 
+## Discards every walkable area that isn't connected to the main one.
+##
+## Scattered props inevitably fence off small pockets of ground. Left in the
+## navmesh, those pockets are traps: a unit thrown into one, or pathed to a
+## target inside one, gets a "closest point" on an island it can never leave
+## and simply stands there. Keeping only the largest connected component means
+## every point on the navmesh is reachable from every other point.
+func _keep_largest_region(walkable: Array[bool], cells: int) -> void:
+	var region_id: PackedInt32Array = PackedInt32Array()
+	region_id.resize(cells * cells)
+	region_id.fill(-1)
+
+	var sizes: Array[int] = []
+	var best_id := -1
+	var best_size := 0
+
+	for start in range(cells * cells):
+		if not walkable[start] or region_id[start] != -1:
+			continue
+		var id := sizes.size()
+		var count := 0
+		var stack: Array[int] = [start]
+		region_id[start] = id
+		while not stack.is_empty():
+			var idx: int = stack.pop_back()
+			count += 1
+			var cx: int = idx % cells
+			@warning_ignore("integer_division")
+			var cz: int = idx / cells
+			for offset: Vector2i in NEIGHBOURS_4:
+				var nx: int = cx + offset.x
+				var nz: int = cz + offset.y
+				if nx < 0 or nz < 0 or nx >= cells or nz >= cells:
+					continue
+				var n := nz * cells + nx
+				if walkable[n] and region_id[n] == -1:
+					region_id[n] = id
+					stack.append(n)
+		sizes.append(count)
+		if count > best_size:
+			best_size = count
+			best_id = id
+
+	if best_id < 0:
+		return
+	for i in range(cells * cells):
+		if walkable[i] and region_id[i] != best_id:
+			walkable[i] = false
+
+
 ## Classic greedy meshing: grow a run along X, then extend it down Z as far as
 ## every row matches. Turns a 6400-cell grid into a few hundred quads.
-func _greedy_rects(walkable: Array[bool], cells: int) -> Array[Rect2i]:
+func _greedy_rects(
+	walkable: Array[bool], cells: int, cell_height: PackedFloat32Array
+) -> Array[Rect2i]:
 	var used: Array[bool] = []
 	used.resize(cells * cells)
 	var rects: Array[Rect2i] = []
@@ -603,31 +680,49 @@ func _greedy_rects(walkable: Array[bool], cells: int) -> Array[Rect2i]:
 				cx += 1
 				continue
 
-			# Grow right.
+			var lo := cell_height[idx]
+			var hi := lo
+
+			# Grow right, stopping when the strip gets too long or too uneven.
 			var width := 1
-			while cx + width < cells:
+			while cx + width < cells and width < max_merge_cells:
 				var i := cz * cells + cx + width
 				if used[i] or not walkable[i]:
 					break
+				var h := cell_height[i]
+				if maxf(hi, h) - minf(lo, h) > max_merge_height_spread:
+					break
+				lo = minf(lo, h)
+				hi = maxf(hi, h)
 				width += 1
 
-			# Grow down while the whole row is free.
-			var height := 1
+			# Grow down while every cell in the row is free and the whole plate
+			# stays within the height budget.
+			var extent := 1
 			var growing := true
-			while growing and cz + height < cells:
+			while growing and cz + extent < cells and extent < max_merge_cells:
+				var row_lo := lo
+				var row_hi := hi
 				for k in range(width):
-					var i := (cz + height) * cells + cx + k
+					var i := (cz + extent) * cells + cx + k
 					if used[i] or not walkable[i]:
 						growing = false
 						break
+					var h := cell_height[i]
+					row_lo = minf(row_lo, h)
+					row_hi = maxf(row_hi, h)
+				if growing and row_hi - row_lo > max_merge_height_spread:
+					growing = false
 				if growing:
-					height += 1
+					lo = row_lo
+					hi = row_hi
+					extent += 1
 
-			for dz in range(height):
+			for dz in range(extent):
 				for dx in range(width):
 					used[(cz + dz) * cells + cx + dx] = true
 
-			rects.append(Rect2i(Vector2i(cx, cz), Vector2i(width, height)))
+			rects.append(Rect2i(Vector2i(cx, cz), Vector2i(width, extent)))
 			cx += width
 
 	return rects

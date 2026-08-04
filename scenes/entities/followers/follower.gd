@@ -29,7 +29,6 @@ enum UnitState {
 @export var ring_capacity: int = 8
 @export var ring_spacing: float = 0.85
 @export var arrival_threshold: float = 0.35
-@export var separation_distance: float = 0.75
 
 @export_group("Squad behaviour")
 ## Enemies inside this radius get attacked even while marching in formation.
@@ -56,9 +55,7 @@ var formation_index: int = 0
 var hold_position: Vector3 = Vector3.ZERO
 var has_hold_position: bool = false
 
-var _nav: NavigationAgent3D = null
 var _scan_timer: float = 0.0
-var _nav_timer: float = 0.0
 var _airtime: float = 0.0
 var _wander_target: Vector3 = Vector3.ZERO
 var _wander_timer: float = 0.0
@@ -88,7 +85,6 @@ static func create(
 func _ready() -> void:
 	# Stagger every unit's think timers so 200 soldiers never scan on one frame.
 	_scan_timer = randf() * 0.25
-	_nav_timer = randf() * 0.3
 	_wander_timer = randf() * 3.0
 
 	if has_meta("tier"):
@@ -97,15 +93,7 @@ func _ready() -> void:
 
 	super._ready()
 
-	_nav = get_node_or_null("NavigationAgent3D") as NavigationAgent3D
-	if _nav:
-		_nav.path_desired_distance = 0.6
-		_nav.target_desired_distance = 0.6
-		_nav.max_speed = move_speed
-		_nav.radius = 0.35
-		_nav.height = 1.6
-		_nav.avoidance_enabled = false   # separation steering is far cheaper
-		_nav.path_max_distance = 6.0
+	setup_navigation()
 
 	died.connect(_on_died)
 	_ready_done = true
@@ -305,19 +293,16 @@ func _process_follow(delta: float) -> void:
 	var dist := to_slot.length()
 
 	if dist <= arrival_threshold:
-		steer(Vector3.ZERO, 0.0, delta, 14.0)
 		# Face the same way the commander does so the block looks disciplined.
 		var forward: Vector3 = leader.global_transform.basis.z
 		face_towards(global_position + forward, delta)
+		move_and_track(separation() * 0.6, move_speed * 0.25, delta, 14.0)
 	else:
-		var dir := _steering_direction(slot, dist)
+		var dir := navigate_towards(slot, delta)
 		# Sprint a little when badly out of position so the tail keeps up.
 		var speed := move_speed * (1.35 if dist > follow_distance * 3.0 else 1.0)
-		steer(dir, speed, delta, 14.0)
 		face_towards(global_position + dir, delta)
-
-	apply_gravity(delta)
-	move_and_slide()
+		move_and_track(dir, speed, delta, 14.0)
 
 
 func _process_loose(delta: float) -> void:
@@ -335,14 +320,11 @@ func _process_loose(delta: float) -> void:
 	var to_target := _wander_target - global_position
 	to_target.y = 0.0
 	if to_target.length() > 0.4:
-		var dir := _steering_direction(_wander_target, to_target.length())
-		steer(dir, move_speed * 0.45, delta, 8.0)
+		var dir := navigate_towards(_wander_target, delta)
 		face_towards(global_position + dir, delta)
+		move_and_track(dir, move_speed * 0.45, delta, 8.0)
 	else:
-		steer(Vector3.ZERO, 0.0, delta, 10.0)
-
-	apply_gravity(delta)
-	move_and_slide()
+		move_and_track(separation() * 0.6, move_speed * 0.25, delta, 10.0)
 
 
 func _process_engage(delta: float) -> void:
@@ -369,11 +351,9 @@ func _process_engage(delta: float) -> void:
 		_set_state(UnitState.ATTACK)
 		return
 
-	var dir := _steering_direction(target_pos, dist)
-	steer(dir, move_speed, delta, 14.0)
+	var dir := navigate_towards(target_pos, delta)
 	face_towards(target_pos, delta)
-	apply_gravity(delta)
-	move_and_slide()
+	move_and_track(dir, move_speed, delta, 14.0)
 
 
 func _process_attack(delta: float) -> void:
@@ -383,20 +363,20 @@ func _process_attack(delta: float) -> void:
 		return
 
 	var dist := distance_to_unit(current_target)
-	# Archers back-pedal when something closes on them.
-	if ranged and dist < attack_range * 0.35:
-		var away := (global_position - current_target.global_position).normalized()
-		steer(away, move_speed * 0.8, delta, 12.0)
-	elif dist > attack_range * 1.15:
+	if dist > attack_range * 1.15:
 		_set_state(UnitState.ENGAGE)
 		return
-	else:
-		steer(_separation() * 0.5, move_speed * 0.3, delta, 10.0)
+
+	var dir := separation() * 0.6
+	var speed := move_speed * 0.3
+	# Archers back-pedal when something closes on them.
+	if ranged and dist < attack_range * 0.35:
+		dir = (global_position - current_target.global_position).normalized()
+		speed = move_speed * 0.8
 
 	face_towards(current_target.global_position, delta)
 	try_attack(current_target)
-	apply_gravity(delta)
-	move_and_slide()
+	move_and_track(dir, speed, delta, 12.0)
 
 
 # ---------------------------------------------------------------------------
@@ -419,46 +399,6 @@ func _scan(delta: float, radius: float) -> bool:
 	current_target = prey
 	_set_state(UnitState.ENGAGE)
 	return true
-
-
-## Blends navmesh pathing (for long hauls) with direct steering (for brawls),
-## then folds in crowd separation so units don't stack into one body.
-func _steering_direction(target_pos: Vector3, dist: float) -> Vector3:
-	var dir: Vector3
-	if _nav and dist > 3.5:
-		_nav_timer -= get_physics_process_delta_time()
-		if _nav_timer <= 0.0:
-			_nav_timer = randf_range(0.25, 0.4)
-			_nav.target_position = target_pos
-		if not _nav.is_navigation_finished():
-			dir = _nav.get_next_path_position() - global_position
-		else:
-			dir = target_pos - global_position
-	else:
-		dir = target_pos - global_position
-
-	dir.y = 0.0
-	if dir.length_squared() > 0.0001:
-		dir = dir.normalized()
-	var blended := dir + _separation() * 0.55
-	if blended.length_squared() < 0.0001:
-		return dir
-	return blended.normalized()
-
-
-## Push away from close neighbours. Uses the spatial hash, not group scans.
-func _separation() -> Vector3:
-	var push := Vector3.ZERO
-	var neighbours := Battle.query(global_position, separation_distance, -1, self)
-	if neighbours.is_empty():
-		return push
-	for other: Node3D in neighbours:
-		var diff: Vector3 = global_position - other.global_position
-		diff.y = 0.0
-		var d := diff.length()
-		if d > 0.001:
-			push += diff / d * (1.0 - d / separation_distance)
-	return push / float(neighbours.size())
 
 
 ## Where this unit belongs in the leader's block: concentric arcs, trailing.

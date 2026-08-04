@@ -111,7 +111,7 @@ func _add_ring(mesh: ImmediateMesh, centre: Vector3, radius: float, color: Color
 func _add_cross(mesh: ImmediateMesh, centre: Vector3, size: float, color: Color) -> void:
 	var half := size * 0.5
 	mesh.surface_begin(Mesh.PRIMITIVE_LINES, null)
-	for axis in [Vector3.RIGHT, Vector3.BACK]:
+	for axis: Vector3 in [Vector3.RIGHT, Vector3.BACK]:
 		mesh.surface_set_color(color)
 		mesh.surface_add_vertex(centre - axis * half)
 		mesh.surface_set_color(color)

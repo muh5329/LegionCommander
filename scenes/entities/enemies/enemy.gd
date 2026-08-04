@@ -51,9 +51,7 @@ var rally_point: Vector3 = Vector3.ZERO
 var has_rally_point: bool = false
 var target_position: Vector3 = Vector3.ZERO
 
-var _nav: NavigationAgent3D = null
 var _scan_timer: float = 0.0
-var _nav_timer: float = 0.0
 var _patrol_target: Vector3 = Vector3.ZERO
 var _patrol_timer: float = 0.0
 
@@ -70,7 +68,6 @@ static func create(scene: PackedScene, unit_role: int, tier: float = 1.0) -> Ene
 
 func _ready() -> void:
 	_scan_timer = randf() * 0.3
-	_nav_timer = randf() * 0.35
 	_patrol_timer = randf_range(patrol_pause.x, patrol_pause.y)
 
 	faction = CombatTypes.Faction.ENEMY
@@ -80,15 +77,7 @@ func _ready() -> void:
 
 	super._ready()
 
-	_nav = get_node_or_null("NavigationAgent3D") as NavigationAgent3D
-	if _nav:
-		_nav.path_desired_distance = 0.7
-		_nav.target_desired_distance = 0.7
-		_nav.max_speed = move_speed
-		_nav.radius = 0.4
-		_nav.height = 1.8
-		_nav.avoidance_enabled = false
-		_nav.path_max_distance = 8.0
+	setup_navigation()
 
 	post_position = global_position
 	_patrol_target = post_position
@@ -163,9 +152,7 @@ func _process_guard(delta: float) -> void:
 		var r := randf_range(patrol_radius * 0.3, patrol_radius)
 		_patrol_target = post_position + Vector3(cos(angle) * r, 0.0, sin(angle) * r)
 		_set_state(EnemyState.PATROL)
-	steer(Vector3.ZERO, 0.0, delta, 10.0)
-	apply_gravity(delta)
-	move_and_slide()
+	move_and_track(separation() * 0.6, move_speed * 0.25, delta, 10.0)
 
 
 func _process_patrol(delta: float) -> void:
@@ -177,11 +164,9 @@ func _process_patrol(delta: float) -> void:
 		_patrol_timer = randf_range(patrol_pause.x, patrol_pause.y)
 		_set_state(EnemyState.GUARD)
 		return
-	var dir := _steering_direction(_patrol_target, to.length())
-	steer(dir, move_speed * 0.5, delta, 9.0)
+	var dir := navigate_towards(_patrol_target, delta)
 	face_towards(global_position + dir, delta)
-	apply_gravity(delta)
-	move_and_slide()
+	move_and_track(dir, move_speed * 0.5, delta, 9.0)
 
 
 func _process_pursue(delta: float) -> void:
@@ -203,11 +188,9 @@ func _process_pursue(delta: float) -> void:
 		_set_state(EnemyState.ATTACK)
 		return
 
-	var dir := _steering_direction(current_target.global_position, dist)
-	steer(dir, move_speed, delta, 13.0)
+	var dir := navigate_towards(current_target.global_position, delta)
 	face_towards(current_target.global_position, delta)
-	apply_gravity(delta)
-	move_and_slide()
+	move_and_track(dir, move_speed, delta, 13.0)
 
 
 func _process_attack(delta: float) -> void:
@@ -221,16 +204,15 @@ func _process_attack(delta: float) -> void:
 		_set_state(EnemyState.PURSUE)
 		return
 
+	var dir := separation() * 0.6
+	var speed := move_speed * 0.25
 	if ranged and dist < attack_range * 0.3:
-		var away := (global_position - current_target.global_position).normalized()
-		steer(away, move_speed * 0.75, delta, 12.0)
-	else:
-		steer(_separation() * 0.5, move_speed * 0.25, delta, 10.0)
+		dir = (global_position - current_target.global_position).normalized()
+		speed = move_speed * 0.75
 
 	face_towards(current_target.global_position, delta)
 	try_attack(current_target)
-	apply_gravity(delta)
-	move_and_slide()
+	move_and_track(dir, speed, delta, 12.0)
 
 
 func _process_rally(delta: float) -> void:
@@ -245,11 +227,9 @@ func _process_rally(delta: float) -> void:
 		post_position = global_position
 		_set_state(EnemyState.GUARD)
 		return
-	var dir := _steering_direction(goal, to.length())
-	steer(dir, move_speed, delta, 12.0)
+	var dir := navigate_towards(goal, delta)
 	face_towards(global_position + dir, delta)
-	apply_gravity(delta)
-	move_and_slide()
+	move_and_track(dir, move_speed, delta, 12.0)
 
 
 # ---------------------------------------------------------------------------
@@ -284,42 +264,6 @@ func alert_to(threat: Node3D) -> void:
 		return
 	current_target = threat
 	_set_state(EnemyState.PURSUE)
-
-
-func _steering_direction(target_pos: Vector3, dist: float) -> Vector3:
-	var dir: Vector3
-	if _nav and dist > 4.0:
-		_nav_timer -= get_physics_process_delta_time()
-		if _nav_timer <= 0.0:
-			_nav_timer = randf_range(0.3, 0.45)
-			_nav.target_position = target_pos
-		if not _nav.is_navigation_finished():
-			dir = _nav.get_next_path_position() - global_position
-		else:
-			dir = target_pos - global_position
-	else:
-		dir = target_pos - global_position
-	dir.y = 0.0
-	if dir.length_squared() > 0.0001:
-		dir = dir.normalized()
-	var blended := dir + _separation() * 0.5
-	if blended.length_squared() < 0.0001:
-		return dir
-	return blended.normalized()
-
-
-func _separation() -> Vector3:
-	var push := Vector3.ZERO
-	var neighbours := Battle.query(global_position, 0.9, -1, self)
-	if neighbours.is_empty():
-		return push
-	for other: Node3D in neighbours:
-		var diff: Vector3 = global_position - other.global_position
-		diff.y = 0.0
-		var d := diff.length()
-		if d > 0.001:
-			push += diff / d * (1.0 - d / 0.9)
-	return push / float(neighbours.size())
 
 
 func _stand_down() -> void:

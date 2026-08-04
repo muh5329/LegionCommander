@@ -9,3 +9,4 @@ res://scripts/combat/battle_service.gd
 res://scripts/combat/combatant.gd
 res://scripts/combat/floating_text.gd
 res://scripts/world/world_generator.gd
+res://scripts/commander/command_gizmos.gd

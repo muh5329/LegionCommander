@@ -47,8 +47,6 @@ var camp: Node3D = null
 
 var _initial_squad_size: int = 0
 var _think_timer: float = 0.0
-var _nav: NavigationAgent3D = null
-var _nav_timer: float = 0.0
 var _aura_timer: float = 0.0
 var _march_goal: Vector3 = Vector3.ZERO
 
@@ -64,12 +62,7 @@ func _ready() -> void:
 
 	super._ready()
 
-	_nav = get_node_or_null("NavigationAgent3D") as NavigationAgent3D
-	if _nav:
-		_nav.path_desired_distance = 0.8
-		_nav.target_desired_distance = 0.8
-		_nav.avoidance_enabled = false
-		_nav.path_max_distance = 10.0
+	setup_navigation()
 
 	home_position = global_position
 	_march_goal = home_position
@@ -229,26 +222,22 @@ func _process_hold(delta: float) -> void:
 	var to_home := home_position - global_position
 	to_home.y = 0.0
 	if to_home.length() > 2.0:
-		var dir := _steering_direction(home_position, to_home.length())
-		steer(dir, move_speed * 0.7, delta, 10.0)
+		var dir := navigate_towards(home_position, delta)
 		face_towards(global_position + dir, delta)
+		move_and_track(dir, move_speed * 0.7, delta, 10.0)
 	else:
-		steer(Vector3.ZERO, 0.0, delta, 10.0)
-	apply_gravity(delta)
-	move_and_slide()
+		move_and_track(separation() * 0.6, move_speed * 0.2, delta, 10.0)
 
 
 func _process_march(delta: float, goal: Vector3) -> void:
 	var to := goal - global_position
 	to.y = 0.0
 	if to.length() < 2.0:
-		steer(Vector3.ZERO, 0.0, delta, 10.0)
+		move_and_track(separation() * 0.6, move_speed * 0.2, delta, 10.0)
 	else:
-		var dir := _steering_direction(goal, to.length())
-		steer(dir, move_speed, delta, 11.0)
+		var dir := navigate_towards(goal, delta)
 		face_towards(global_position + dir, delta)
-	apply_gravity(delta)
-	move_and_slide()
+		move_and_track(dir, move_speed, delta, 11.0)
 
 
 func _process_fight(delta: float) -> void:
@@ -257,15 +246,13 @@ func _process_fight(delta: float) -> void:
 		_set_posture(Posture.HOLD)
 		return
 	var dist := distance_to_unit(current_target)
-	if dist > attack_range * 1.2:
-		var dir := _steering_direction(current_target.global_position, dist)
-		steer(dir, move_speed, delta, 12.0)
-	else:
-		steer(Vector3.ZERO, 0.0, delta, 12.0)
-		try_attack(current_target)
 	face_towards(current_target.global_position, delta)
-	apply_gravity(delta)
-	move_and_slide()
+	if dist > attack_range * 1.2:
+		var dir := navigate_towards(current_target.global_position, delta)
+		move_and_track(dir, move_speed, delta, 12.0)
+	else:
+		try_attack(current_target)
+		move_and_track(separation() * 0.6, move_speed * 0.2, delta, 12.0)
 
 
 # ---------------------------------------------------------------------------
@@ -293,25 +280,6 @@ func _clear_aura() -> void:
 # ---------------------------------------------------------------------------
 # Movement helper
 # ---------------------------------------------------------------------------
-
-func _steering_direction(target_pos: Vector3, dist: float) -> Vector3:
-	var dir: Vector3
-	if _nav and dist > 4.0:
-		_nav_timer -= get_physics_process_delta_time()
-		if _nav_timer <= 0.0:
-			_nav_timer = 0.35
-			_nav.target_position = target_pos
-		if not _nav.is_navigation_finished():
-			dir = _nav.get_next_path_position() - global_position
-		else:
-			dir = target_pos - global_position
-	else:
-		dir = target_pos - global_position
-	dir.y = 0.0
-	if dir.length_squared() > 0.0001:
-		dir = dir.normalized()
-	return dir
-
 
 func _on_died(_unit: Combatant, _killer: Node) -> void:
 	_clear_aura()

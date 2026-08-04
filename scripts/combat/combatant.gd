@@ -33,6 +33,30 @@ var role: int = CombatTypes.UnitRole.LEGIONARY
 @export var ranged: bool = false
 @export var damage_multiplier: float = 1.0
 
+@export_group("Navigation")
+## How close neighbours have to be before they push each other apart.
+@export var separation_distance: float = 0.8
+## Weight of the separation push. Must stay below 1.0 - see separation().
+@export var separation_strength: float = 0.55
+## Inside this range the navmesh is skipped and the unit steers straight at
+## its target. Keep it small: it is where units stop routing around obstacles.
+@export var direct_steer_distance: float = 1.6
+@export var repath_interval: Vector2 = Vector2(0.25, 0.4)
+## Must match WorldGenerator.max_walkable_slope. The physics floor limit is
+## derived from this so the two systems agree about what is walkable.
+@export var navmesh_slope_limit: float = 38.0
+## Drifting further than this from the navmesh means walking home to it first.
+@export var offmesh_tolerance: float = 1.5
+
+@export_group("Unsticking")
+## Moving slower than this while trying to move counts as "not making progress".
+@export var stuck_speed_threshold: float = 0.4
+## Seconds of no progress before the unit tries to sidestep.
+@export var stuck_time_before_nudge: float = 0.45
+@export var nudge_duration: float = 0.55
+## Seconds of no progress before the unit is teleported back onto the navmesh.
+@export var stuck_time_before_rescue: float = 3.5
+
 @export_group("Feel")
 ## Imported rigs disagree about which way is forward. face_towards() aims the
 ## body's +Z at its target; if a unit visibly runs backwards, set this to 180
@@ -71,6 +95,18 @@ var _base_model_scale: Vector3 = Vector3.ONE
 var _flash_timer: float = 0.0
 var _tinted_materials: Array[StandardMaterial3D] = []
 var _needs_ground_snap: bool = true
+
+# Navigation / unsticking
+var nav_agent: NavigationAgent3D = null
+var _repath_timer: float = 0.0
+var _stuck_time: float = 0.0
+var _nudge_time: float = 0.0
+var _nudge_dir: Vector3 = Vector3.ZERO
+var _wants_to_move: bool = false
+var _blocking_wall: Vector3 = Vector3.ZERO
+var _rescue_count: int = 0
+## Set when the unit has drifted off the navmesh; the point to walk back to.
+var _offmesh_anchor: Vector3 = Vector3.ZERO
 
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
 
@@ -139,6 +175,9 @@ const VOID_Y := -60.0
 
 
 func tick_combat(delta: float) -> void:
+	# Reset each frame; navigate_towards() sets it when the unit actually wants
+	# to be going somewhere, so idling never counts as being stuck.
+	_wants_to_move = false
 	if _needs_ground_snap:
 		_needs_ground_snap = false
 		snap_to_ground()
@@ -179,9 +218,11 @@ func snap_to_ground(search_up: float = 25.0, search_down: float = 60.0) -> void:
 	)
 	query.collision_mask = 1 << (CombatTypes.LAYER_WORLD - 1)
 	query.exclude = [get_rid()]
-	var hit := space.intersect_ray(query)
-	if hit.has("position"):
-		var point: Vector3 = hit["position"]
+	# Not named `hit` - this class has a hit() method and GDScript treats a
+	# local of the same name as shadowing it.
+	var ground := space.intersect_ray(query)
+	if ground.has("position"):
+		var point: Vector3 = ground["position"]
 		global_position = Vector3(global_position.x, point.y + 0.1, global_position.z)
 		velocity.y = 0.0
 
@@ -366,6 +407,227 @@ func _play_death() -> void:
 # ---------------------------------------------------------------------------
 # Movement helper shared by every AI
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Navigation
+# ---------------------------------------------------------------------------
+
+## Wires up the NavigationAgent3D and the body's floor handling. Called from
+## _ready(); safe to call again after changing move_speed.
+func setup_navigation() -> void:
+	nav_agent = get_node_or_null("NavigationAgent3D") as NavigationAgent3D
+	if nav_agent:
+		nav_agent.path_desired_distance = 0.45
+		nav_agent.target_desired_distance = 0.5
+		nav_agent.max_speed = move_speed
+		nav_agent.radius = 0.3
+		nav_agent.height = 1.6
+		# Separation steering does the crowd work; RVO avoidance on 150 agents
+		# is both slower and prone to locking units against each other.
+		nav_agent.avoidance_enabled = false
+		nav_agent.path_max_distance = 8.0
+	_repath_timer = randf_range(repath_interval.x, repath_interval.y)
+
+	# Slope handling. These have to be derived from the unit's actual size:
+	# soldiers are scaled to roughly 0.7 m tall, and a floor_snap_length tuned
+	# for a human-sized body is most of their height.
+	var body_height := 1.0
+	var shape_node := get_node_or_null("CollisionShape3D") as CollisionShape3D
+	if shape_node and shape_node.shape is CapsuleShape3D:
+		body_height = (shape_node.shape as CapsuleShape3D).height * maxf(scale.y, 0.01)
+
+	# The physics floor limit must sit just ABOVE the navmesh's slope limit.
+	# If it sits far above, units happily walk onto ground the navmesh doesn't
+	# cover; the agent then snaps its path origin back to the nearest mesh
+	# point - often behind them - and they oscillate on the hillside forever.
+	floor_max_angle = deg_to_rad(navmesh_slope_limit + 4.0)
+	floor_snap_length = clampf(body_height * 0.5, 0.12, 0.5)
+	floor_stop_on_slope = false
+	floor_constant_speed = true
+	wall_min_slide_angle = deg_to_rad(12.0)
+	safe_margin = clampf(body_height * 0.02, 0.001, 0.04)
+
+
+## Steering direction toward `target_pos`: navmesh path when far, direct when
+## close, always blended with crowd separation and wall sliding.
+func navigate_towards(target_pos: Vector3, delta: float) -> Vector3:
+	_wants_to_move = true
+
+	var to_target := target_pos - global_position
+	to_target.y = 0.0
+	var dist := to_target.length()
+
+	# A sidestep in progress overrides normal steering until it expires.
+	if _nudge_time > 0.0:
+		_nudge_time -= delta
+		var escape := _nudge_dir + separation() * 0.3
+		return escape.normalized() if escape.length_squared() > 0.0001 else _nudge_dir
+
+	var dir := to_target
+	if nav_agent != null and dist > direct_steer_distance:
+		_repath_timer -= delta
+		if _repath_timer <= 0.0:
+			_repath_timer = randf_range(repath_interval.x, repath_interval.y)
+			# Snapping the goal onto the navmesh matters: an unreachable target
+			# leaves the agent reporting "navigation finished" the moment it
+			# gets near, after which it walks straight into whatever is in the
+			# way and stays there.
+			nav_agent.target_position = snap_to_navmesh(target_pos)
+			_refresh_offmesh_anchor()
+
+		# Wandered off the navmesh (onto a slope the mesh doesn't cover, say)?
+		# Head back to it before anything else. Otherwise the agent keeps
+		# snapping its path origin to a mesh point behind us and the unit
+		# jitters back and forth on the hillside indefinitely.
+		if _offmesh_anchor != Vector3.ZERO:
+			var home := _offmesh_anchor - global_position
+			home.y = 0.0
+			if home.length_squared() > 0.04:
+				return home.normalized()
+
+		if not nav_agent.is_navigation_finished():
+			var step := nav_agent.get_next_path_position() - global_position
+			step.y = 0.0
+			# A degenerate step means the agent is off-mesh or has no path.
+			if step.length_squared() > 0.0025:
+				dir = step
+
+	dir.y = 0.0
+	if dir.length_squared() < 0.000001:
+		return Vector3.ZERO
+	dir = dir.normalized()
+
+	# Jammed against something? Slide along it rather than pressing into it.
+	if _blocking_wall != Vector3.ZERO and dir.dot(_blocking_wall) < 0.0:
+		var tangent := dir.slide(_blocking_wall)
+		if tangent.length_squared() > 0.02:
+			dir = tangent.normalized()
+
+	var blended := dir + separation() * separation_strength
+	return blended.normalized() if blended.length_squared() > 0.0001 else dir
+
+
+## Records where the navmesh is if we've strayed off it, otherwise clears.
+## Compared horizontally only - navmesh polygons sit slightly above the ground,
+## so a vertical gap is normal and must not be mistaken for being lost.
+func _refresh_offmesh_anchor() -> void:
+	_offmesh_anchor = Vector3.ZERO
+	var map := get_world_3d().navigation_map
+	if not map.is_valid():
+		return
+	var closest := NavigationServer3D.map_get_closest_point(map, global_position)
+	if closest == Vector3.ZERO:
+		return
+	var flat := Vector2(closest.x - global_position.x, closest.z - global_position.z)
+	if flat.length() > offmesh_tolerance:
+		_offmesh_anchor = closest
+
+
+## Nearest point on the navigation map, or `p` unchanged if the map isn't
+## ready yet (it syncs one physics frame after the region is added).
+func snap_to_navmesh(p: Vector3) -> Vector3:
+	var map := get_world_3d().navigation_map
+	if not map.is_valid():
+		return p
+	var closest := NavigationServer3D.map_get_closest_point(map, p)
+	return p if closest == Vector3.ZERO else closest
+
+
+## Crowd separation, bounded.
+##
+## The obvious formulation weights each neighbour by 1/distance, but that force
+## goes to infinity as two units touch - it swamps the goal direction entirely
+## and locks crowds into deadlock. Weighting by overlap instead, and capping
+## the result below 1.0, guarantees `goal + separation` still has a positive
+## component along `goal`, so a unit can always make forward progress.
+func separation(radius: float = -1.0) -> Vector3:
+	var r: float = separation_distance if radius <= 0.0 else radius
+	var neighbours := Battle.query(global_position, r, -1, self)
+	if neighbours.is_empty():
+		return Vector3.ZERO
+
+	var push := Vector3.ZERO
+	for other: Node3D in neighbours:
+		var diff: Vector3 = global_position - other.global_position
+		diff.y = 0.0
+		var d := diff.length()
+		if d < 0.0001:
+			# Exactly co-located: break the tie deterministically per unit so
+			# an overlapping pair doesn't pick the same escape every frame.
+			var a := float(get_instance_id() % 628) * 0.01
+			push += Vector3(cos(a), 0.0, sin(a))
+		else:
+			push += (diff / d) * (1.0 - d / r)
+
+	push /= float(neighbours.size())
+	return push.limit_length(0.85)
+
+
+## Steer, fall, move, and watch for the unit failing to get anywhere.
+func move_and_track(direction: Vector3, speed: float, delta: float, accel: float = 13.0) -> void:
+	steer(direction, speed, delta, accel)
+	apply_gravity(delta)
+	move_and_slide()
+	_track_progress(delta, speed)
+
+
+func _track_progress(delta: float, desired_speed: float) -> void:
+	# Remember what we're pressed against so navigate_towards() can slide.
+	_blocking_wall = Vector3.ZERO
+	for i in range(get_slide_collision_count()):
+		var normal := get_slide_collision(i).get_normal()
+		if absf(normal.y) < 0.6:      # a wall, not the ground
+			_blocking_wall = normal
+			break
+
+	if not _wants_to_move or desired_speed <= 0.05:
+		_stuck_time = 0.0
+		return
+	if horizontal_speed() > minf(stuck_speed_threshold, desired_speed * 0.35):
+		_stuck_time = 0.0
+		_rescue_count = 0
+		return
+
+	_stuck_time += delta
+	if _nudge_time <= 0.0 and _stuck_time > stuck_time_before_nudge:
+		_begin_nudge()
+	if _stuck_time > stuck_time_before_rescue:
+		_rescue_from_stuck()
+
+
+## Commit to sidestepping one way for a moment. The side is chosen per unit
+## rather than randomly, so two units jammed face to face pick opposite ways
+## and clear each other instead of mirroring forever.
+func _begin_nudge() -> void:
+	_nudge_time = nudge_duration
+	var side := Vector3.ZERO
+	if _blocking_wall != Vector3.ZERO:
+		side = Vector3.UP.cross(_blocking_wall)
+	if side.length_squared() < 0.001:
+		side = Vector3(randf() - 0.5, 0.0, randf() - 0.5)
+	if int(get_instance_id()) % 2 == 0:
+		side = -side
+	_nudge_dir = side.normalized()
+
+
+## Last resort: put the unit back on the navmesh.
+func _rescue_from_stuck() -> void:
+	_stuck_time = 0.0
+	_nudge_time = 0.0
+	_rescue_count += 1
+	if nav_agent:
+		nav_agent.target_position = global_position
+
+	var map := get_world_3d().navigation_map
+	if map.is_valid():
+		var p := NavigationServer3D.map_get_closest_point(map, global_position)
+		if p != Vector3.ZERO and p.distance_to(global_position) < 40.0:
+			global_position = Vector3(p.x, p.y + 0.25, p.z)
+			velocity = Vector3.ZERO
+			snap_to_ground()
+			return
+	snap_to_ground()
+
 
 ## Applies horizontal steering plus the current knockback impulse.
 func steer(direction: Vector3, speed: float, delta: float, accel: float = 12.0) -> void:
